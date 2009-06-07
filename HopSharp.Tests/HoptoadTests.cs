@@ -17,8 +17,8 @@ namespace Tests
 			catch (Exception e)
 			{
 				// TODO would like to mock the HttpWebRequest call... maybe dig up my TypeMock license
-				HoptoadClient a = new HoptoadClient();
-				a.Send(e);
+				HoptoadClient a = new HoptoadClient(e);
+				a.Send();
 			}
 		}
 
@@ -35,7 +35,7 @@ namespace Tests
 			string json = notice.Serialize();
 
 			Console.WriteLine(json);
-				Assert.AreEqual("{\"notice\":{\"api_key\":\"12345678\",\"error_class\":\"sdflshs\",\"error_message\":\"sdlfds\",\"session\":{},\"request\":{},\"backtrace\":[\"blah1\",\"poop2\"]}}", json);
+            Assert.AreEqual("{\"notice\":{\"api_key\":\"12345678\",\"error_class\":\"sdflshs\",\"error_message\":\"sdlfds\",\"environment\":{\"RAILS_ENV\":\"Default [Debug]\"},\"request\":null,\"session\":null,\"backtrace\":[\"blah1\",\"poop2\"]}}", json);
 		}
 	}
 }

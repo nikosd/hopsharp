@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Web.SessionState;
+using System.Configuration;
+using System.Web;
 using Newtonsoft.Json;
 
 namespace HopSharp
 {
+    /// <summary>
+    /// The object class that encapsulates all the data regarding the exception and the
+    /// environment details that will be sent to HopToad.
+    /// </summary>
 	public class HoptoadNotice
-	{
-		public HoptoadNotice()
-		{
-			Session = new Dictionary<string, object>();
-			Request = new Dictionary<string, object>();
-		}
-
-		[JsonProperty("api_key")]
+    {
+        #region JSON Serialized objects.
+        
+        [JsonProperty("api_key")]
 		public string ApiKey { get; set; }
 
 		[JsonProperty("error_class")]
@@ -22,46 +23,92 @@ namespace HopSharp
 		[JsonProperty("error_message")]
 		public string ErrorMessage { get; set; }
 
-		[JsonProperty("session")]
-		public IDictionary<string, object> Session { get; set; }
+        [JsonProperty("environment")]
+        public IDictionary<string, object> Environment { get; private set; }
 
-		[JsonProperty("request")]
-		public IDictionary<string, object> Request { get; set; }
+        [JsonProperty("request")]
+        public RequestInfo Request { get; set; }
+
+        [JsonProperty("session")]
+        public SessionData Session { get; set; }
 
 		[JsonProperty("backtrace")]
 		[JsonConverter(typeof(BacktraceConverter))]
 		public string Backtrace { get; set; }
-	
-		public void SetSession(HttpSessionState session)
-		{
-			foreach(string key in session.Keys)
-				Session.Add(key, session[key]);
-		}
+        
+        #endregion
 
-		public string Serialize()
-		{
-			return JavaScriptConvert.SerializeObject(new HoptoadNoticeSub(this));
-		}
-	}
+        #region Normal properties
 
-	internal class HoptoadNoticeSub
-	{
-		public HoptoadNoticeSub(HoptoadNotice notice) { this.notice = notice; }
-		public HoptoadNotice notice { get; set; }
-	}
+        [JsonIgnore]
+	    public HttpContext HttpContext
+	    {
+	        get { return _httpContext; }
+	        set
+	        {
+	            _httpContext = value;
+                Request = new RequestInfo(_httpContext.Request);
+                Session = new SessionData(_httpContext.Session);
+                setRequestParamsInEnvironment();
+	        }
+	    }
+        private HttpContext _httpContext;
 
-	public class BacktraceConverter : JsonConverter
-	{
-		public override void WriteJson(JsonWriter writer, object value)
-		{
-			writer.WriteStartArray();
-			foreach(string line in ((string)value).Split('\n'))
-				writer.WriteValue(line);
-			writer.WriteEndArray();
-		}
+        #endregion
 
-		public override object ReadJson(JsonReader reader, Type objectType) { throw new NotImplementedException(); }
+        /// <summary>
+        /// Creates a new HoptoadNotice, inits the dictionaries and sets the build
+        /// configuration (debug or release) plus the environment (tries to read the
+        /// environment name from the config file or sets it as "Default".
+        /// </summary>
+        public HoptoadNotice()
+        {
+            //Session = new Dictionary<string, object>();
+            Environment = new Dictionary<string, object>();
+            setEnvironment();
+        }
 
-		public override bool CanConvert(Type objectType) { return true; }
+        /// <summary>
+        /// Serializes the current instance into JSON form (including the root "notice"
+        /// element).
+        /// </summary>
+        /// <returns></returns>
+        public string Serialize()
+        {
+            return JavaScriptConvert.SerializeObject(new HoptoadNoticeSub(this));
+        }
+
+        private void setEnvironment()
+        {
+#if (DEBUG)
+            var environment = "Debug";
+#else
+            var environment = "Release"
+#endif
+
+            var configuration =
+                string.IsNullOrEmpty(ConfigurationManager.AppSettings["Hoptoad:Environment"])
+                    ? "Default"
+                    : ConfigurationManager.AppSettings["Hoptoad:Environment"];
+
+            environment = string.Format("{0} [{1}]", configuration, environment);
+
+            Environment.Add("RAILS_ENV", environment);
+        }
+
+        private void setRequestParamsInEnvironment()
+        {
+            if (HttpContext == null || HttpContext.Request == null)
+                return;
+
+            foreach (var key in HttpContext.Request.Params.AllKeys)
+                if (HttpContext.Request.Params[key] != null && 
+                    !string.IsNullOrEmpty(HttpContext.Request.Params[key]))
+                Environment.Add(key, HttpContext.Request.Params[key]);
+
+            // BUG: When we send the following parameter to HopToad it breaks...
+            // (This is why it's removed from the "Environment" entries.
+            Environment.Remove("APPL_PHYSICAL_PATH");
+        }
 	}
 }

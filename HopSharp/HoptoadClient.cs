@@ -9,71 +9,118 @@ namespace HopSharp
 {
 	public class HoptoadClient
 	{
-		public void Send(Exception e)
-		{
-			HoptoadNotice notice = new HoptoadNotice();
+        /// <summary>
+        /// The <see cref="HoptoadNotice"/> object that will be serialized and sent to
+        /// HopToad.
+        /// </summary>
+        public HoptoadNotice Notice { get; private set; }
 
-			// Set the exception related fields
-			notice.ErrorClass = e.GetType().FullName;
-			notice.ErrorMessage = e.GetType().Name + ": " + e.Message;
-			notice.Backtrace = e.StackTrace;
+        /// <summary>
+        /// Prepare a message for HopToad from an exception.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <exception cref="ArgumentNullException"><c>e</c> is null.</exception>
+        public HoptoadClient(Exception e)
+        {
+            if (e == null) throw new ArgumentNullException("e");
+            
+            Notice = new HoptoadNotice
+                         {
+                             ErrorClass = e.GetType().FullName,
+                             ErrorMessage = (e.GetType().Name + ": " + e.Message),
+                             Backtrace = e.StackTrace,
+                         };
 
-			// If we have an HttpContext, load the environment, request, and session information
-			HttpContext context = HttpContext.Current;
-			if (context != null)
-			{
-				notice.Request.Add("params", context.Request.Form);
-				notice.SetSession(context.Session);
-			}
+            if (HttpContext.Current != null)
+                Notice.HttpContext = HttpContext.Current;
+        }
 
-			// Send the notice
-			Send(notice);
-		}
+	    /// <summary>
+	    /// Prepare a message for HopToad from a custom created notice.
+	    /// </summary>
+	    /// <param name="notice"></param>
+        /// <exception cref="ArgumentNullException"><c>notice</c> is null.</exception>
+	    public HoptoadClient(HoptoadNotice notice)
+        {
+            if (notice == null) throw new ArgumentNullException("notice");
+            
+            Notice = notice;
+        }
 
-		public void Send(HoptoadNotice notice)
-		{
-			try
-			{
-				// If no API key, get it from the appSettings
-				if (string.IsNullOrEmpty(notice.ApiKey))
-				{
-					// If none is set, just return... throwing an exception is pointless, since one was already thrown!
-					if (string.IsNullOrEmpty(ConfigurationManager.AppSettings["Hoptoad:ApiKey"]))
-						return;
-					notice.ApiKey = ConfigurationManager.AppSettings["Hoptoad:ApiKey"];
-				}
+	    /// <summary>
+	    /// Send the notice to HopToad.
+	    /// </summary>
+	    /// <remarks>Notice must be already set up either from 
+	    /// <see cref="HoptoadClient(Exception)"/> or from 
+	    /// <see cref="HoptoadClient(HoptoadNotice)"/>.</remarks>
+	    public void Send()
+        {
+            try
+            {
+                // If no API key, get it from the appSettings
+                if (string.IsNullOrEmpty(Notice.ApiKey))
+                {
+                    // If none is set, just return... throwing an exception is pointless, since one was already thrown!
+                    if (string.IsNullOrEmpty(ConfigurationManager.AppSettings["Hoptoad:ApiKey"]))
+                        return;
 
-				// Create the web request
-				HttpWebRequest request = WebRequest.Create("http://hoptoadapp.com/notices/") as HttpWebRequest;
-				if (request == null)
-					return;
+                    Notice.ApiKey = ConfigurationManager.AppSettings["Hoptoad:ApiKey"];
+                }
 
-				// Set the basic headers
-				request.ContentType = "application/json";
-				request.Accept = "text/xml, application/xml";
-				request.KeepAlive = false;
+                // Create the web request
+                var request = WebRequest.Create("http://hoptoadapp.com/notices/") as HttpWebRequest;
+                if (request == null)
+                    return;
 
-				// It is important to set the method late... .NET quirk, it will interfere with headers set after
-				request.Method = "POST";
+                // Set the basic headers
+                request.ContentType = "application/json";
+                request.Accept = "text/xml, application/xml";
+                request.KeepAlive = false;
 
-				// Go populate the body
-				SetRequestBody(request, notice);
+                // It is important to set the method late... .NET quirk, it will interfere with headers set after
+                request.Method = "POST";
 
-				// Begin the request, yay async
-				request.BeginGetResponse(RequestCallback, null);
-			}
-			catch
-			{
-				// Since an exception was already thrown, allowing another one to bubble up is pointless
-				// But we should log it or something
-				// TODO this could be better
-			}
-		}
+                // Go populate the body
+                setRequestBody(request);
 
-		private void RequestCallback(IAsyncResult ar)
+                // Begin the request, yay async
+                request.BeginGetResponse(requestCallback, null);
+            }
+            catch
+            {
+                // Since an exception was already thrown, allowing another one to bubble up is pointless
+                // But we should log it or something
+                // TODO this could be better
+            }
+        }
+
+        /// <summary>
+        /// Serialize the <see cref="Notice"/> and write the data to the 
+        /// <paramref name="request"/>content.
+        /// </summary>
+        /// <param name="request"></param>
+        private void setRequestBody(HttpWebRequest request)
+        {
+            // Get the bytes
+            var payload = Encoding.UTF8.GetBytes(Notice.Serialize());
+            request.ContentLength = payload.Length;
+
+            // Get the request stream and write the bytes
+            using (var stream = request.GetRequestStream())
+            {
+                stream.Write(payload, 0, payload.Length);
+                stream.Close();
+            }
+        }
+
+        /// <summary>
+        /// Handle the request when it finishes.
+        /// </summary>
+        /// <param name="ar"></param>
+		private static void requestCallback(IAsyncResult ar)
 		{
 			// Get it back
-			HttpWebRequest request = ar.AsyncState as HttpWebRequest;
+			var request = ar.AsyncState as HttpWebRequest;
 			if (request == null)
 				return;
 
@@ -91,20 +138,6 @@ namespace HopSharp
 				StreamReader sr = new StreamReader(e.Response.GetResponseStream());
 				Console.WriteLine(sr.ReadToEnd());
 				sr.Close();
-			}
-		}
-
-		private void SetRequestBody(HttpWebRequest request, HoptoadNotice notice)
-		{
-			// Get the bytes
-			byte[] payload = Encoding.UTF8.GetBytes(notice.Serialize());
-			request.ContentLength = payload.Length;
-
-			// Get the request stream and write the bytes
-			using (Stream stream = request.GetRequestStream())
-			{
-				stream.Write(payload, 0, payload.Length);
-				stream.Close();
 			}
 		}
 	}

@@ -6,8 +6,8 @@ namespace HopSharp
 	{
 		public static void SendToHoptoad(this Exception exception)
 		{
-			HoptoadClient client = new HoptoadClient();
-			client.Send(exception);
+            var client = new HoptoadClient(exception);
+			client.Send();
 		}
 	}
 }

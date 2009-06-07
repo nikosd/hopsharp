@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-
-
-public partial class PostPage {
+namespace HopSharp.WebExample {
+    public partial class PostPage {
+    }
 }
