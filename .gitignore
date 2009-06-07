@@ -5,3 +5,7 @@ HopSharp/bin
 HopSharp/obj
 HopSharp.Tests/bin
 HopSharp.Tests/obj
+HopSharp.ConsoleExample/bin
+HopSharp.ConsoleExample/obj
+HopSharp.WebExample/bin
+HopSharp.WebExample/obj
