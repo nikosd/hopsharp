@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HopSharp", "HopSharp\HopSharp.csproj", "{EE7CE02E-3CA9-4D01-8D57-E98911466B44}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{9D9863D8-EDB6-4B34-94C1-3894B00EBF97}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HopSharp.Tests", "HopSharp.Tests\HopSharp.Tests.csproj", "{9D9863D8-EDB6-4B34-94C1-3894B00EBF97}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

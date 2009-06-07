@@ -1,0 +1,7 @@
+_ReSharper.*
+*.user
+*.suo
+HopSharp/bin
+HopSharp/obj
+HopSharp.Tests/bin
+HopSharp.Tests/obj
