@@ -1,9 +1,12 @@
-using System.Collections.Generic;
-using System.Web;
-using Newtonsoft.Json;
-
 namespace HopSharp
 {
+    using System.Collections.Generic;
+    using System.Web;
+    using Newtonsoft.Json;
+
+    /// <summary>
+    /// 
+    /// </summary>
     public class RequestInfo
     {
         [JsonProperty("params")]
@@ -18,12 +21,15 @@ namespace HopSharp
         public RequestInfo(HttpRequest request)
         {
             Url = request.Url.AbsoluteUri;
-            ApplicationRoot = request.PhysicalApplicationPath.Replace(":",string.Empty).Replace('\\','/');
-            
+
+            ApplicationRoot = request.PhysicalApplicationPath != null
+                                  ? request.PhysicalApplicationPath.Replace(":", string.Empty).Replace('\\', '/')
+                                  : string.Empty;
+
             Params = new Dictionary<string, object>
                          {
-                             {"action", request.HttpMethod},
-                             {"controller", request.FilePath}
+                             { "action", request.HttpMethod },
+                             { "controller", request.FilePath }
                          };
 
             foreach (string param in request.QueryString)

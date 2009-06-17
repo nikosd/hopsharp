@@ -1,9 +1,12 @@
-using System;
-using System.Collections.Generic;
-using Newtonsoft.Json;
-
 namespace HopSharp
 {
+    using System;
+    using System.Collections.Generic;
+    using Newtonsoft.Json;
+
+    /// <summary>
+    /// 
+    /// </summary>
     public class SessionData
     {
         [JsonProperty("data")]
@@ -12,6 +15,10 @@ namespace HopSharp
         [JsonProperty("key")]
         public string Key { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="session"></param>
         public SessionData(System.Web.SessionState.HttpSessionState session)
         {
             if (session == null)

@@ -1,41 +1,41 @@
-﻿using System;
-using HopSharp;
-using NUnit.Framework;
-
-namespace Tests
+﻿namespace HopSharp.Tests
 {
-	[TestFixture]
-	public class HoptoadTests
-	{
-		[Test]
-		public void Can_send_an_exception()
-		{
-			try
-			{
-				throw new NotImplementedException("Booo");
-			}
-			catch (Exception e)
-			{
-				// TODO would like to mock the HttpWebRequest call... maybe dig up my TypeMock license
-				HoptoadClient a = new HoptoadClient(e);
-				a.Send();
-			}
-		}
+    using System;
+    using NUnit.Framework;
 
-		[Test]
-		public void Can_convert_HoptoadNotice_to_json()
-		{
-			HoptoadNotice notice = new HoptoadNotice();
+    [TestFixture]
+    public class HoptoadTests
+    {
+        [Test]
+        public void Can_send_an_exception()
+        {
+            try
+            {
+                throw new NotImplementedException("Booo");
+            }
+            catch (Exception e)
+            {
+                // TODO would like to mock the HttpWebRequest call... maybe dig up my TypeMock license
+                var a = new HoptoadClient(e);
+                a.Send();
+            }
+        }
 
-			notice.ApiKey = "12345678";	
-			notice.ErrorMessage = "sdlfds";
-			notice.ErrorClass = "sdflshs";
-			notice.Backtrace = "blah1\npoop2";
+        [Test]
+        public void Can_convert_HoptoadNotice_to_json()
+        {
+            var notice = new HoptoadNotice
+                             {
+                                 ApiKey = "12345678",
+                                 ErrorMessage = "sdlfds",
+                                 ErrorClass = "sdflshs",
+                                 Backtrace = "blah1\npoop2"
+                             };
 
-			string json = notice.Serialize();
+            var json = notice.Serialize();
 
-			Console.WriteLine(json);
+            Console.WriteLine(json);
             Assert.AreEqual("{\"notice\":{\"api_key\":\"12345678\",\"error_class\":\"sdflshs\",\"error_message\":\"sdlfds\",\"environment\":{\"RAILS_ENV\":\"Default [Debug]\"},\"request\":null,\"session\":null,\"backtrace\":[\"blah1\",\"poop2\"]}}", json);
-		}
-	}
+        }
+    }
 }

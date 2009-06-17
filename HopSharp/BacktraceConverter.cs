@@ -1,13 +1,59 @@
-using System;
-using System.Text.RegularExpressions;
-using Newtonsoft.Json;
-
 namespace HopSharp
 {
+    using System;
+    using System.Text.RegularExpressions;
+    using Newtonsoft.Json;
+
+    /// <summary>
+    /// </summary>
     public class BacktraceConverter : JsonConverter
     {
         private string[] _lines;
-        
+
+        #region Newtonsoft.Json.JsonConverter Overrides
+
+        public override void WriteJson(JsonWriter writer, object value)
+        {
+            _lines = ((string)value).Split('\n');
+
+            writer.WriteStartArray();
+
+            // Format the first line to match ruby's way of writing stack trace lines.
+            // This is needed because HopToad tries to parse that line to set the
+            // "File" row.
+            try
+            {
+                writer.WriteValue(formatFirstLine());
+
+                // Leave some free space from the above custom/hacked line.
+                writer.WriteValue(" ");
+                writer.WriteValue("--");
+                writer.WriteValue("--");
+                writer.WriteValue(" ");
+            }
+            catch
+            {
+            }
+
+            // Now write the actual Backtrace
+            foreach (var line in _lines)
+                writer.WriteValue(line);
+
+            writer.WriteEndArray();
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return true;
+        }
+
+        #endregion
+
         private string formatFirstLine()
         {
             string filename;
@@ -21,7 +67,7 @@ namespace HopSharp
             if (match.Success)
             {
                 methodName = match.Groups["method"].Captures[0].Value;
-                filename = match.Groups["filename"].Captures[0].Value.Replace(":", "");
+                filename = match.Groups["filename"].Captures[0].Value.Replace(":", string.Empty);
                 lineNumber = match.Groups["lineNumber"].Captures[0].Value;
             }
             else
@@ -36,43 +82,5 @@ namespace HopSharp
 
             return string.Format("{0}:{1}:in `{2}`", filename, lineNumber, methodName);
         }
-
-        #region Newtonsoft.Json.JsonConverter Overrides
-
-        public override void WriteJson(JsonWriter writer, object value)
-        {
-            _lines = ((string) value).Split('\n');
-            
-            writer.WriteStartArray();
-
-            // Format the first line to match ruby's way of writing stack trace lines.
-            // This is needed because HopToad tries to parse that line to set the
-            // "File" row.
-            try
-            {
-                writer.WriteValue(formatFirstLine());
-                // Leave some free space from the above custom/hacked line.
-                writer.WriteValue(" ");
-                writer.WriteValue("--");
-                writer.WriteValue("--");
-                writer.WriteValue(" ");
-            }
-            catch{}
-            
-            // Now write the actual Backtrace
-            foreach (string line in _lines)
-                writer.WriteValue(line);
-            
-            writer.WriteEndArray();
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool CanConvert(Type objectType) { return true; }
-
-        #endregion
     }
 }

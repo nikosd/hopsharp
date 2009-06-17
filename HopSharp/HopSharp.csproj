@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BacktraceConverter.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="Extension.cs" />
     <Compile Include="HoptoadClient.cs" />
     <Compile Include="HoptoadNotice.cs" />
